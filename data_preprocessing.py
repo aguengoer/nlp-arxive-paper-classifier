@@ -1,6 +1,28 @@
 import json
 import re
 
+def papers_by_single_category(category:str,papers:list)->list:
+    #TODO: Refine for multiple elements of a single category
+    categories=set([el['categories'] for el in papers])
+    cat_wanted_only=[el for el in categories if re.search(category,el,re.IGNORECASE) and not re.search(' ',el)]
+    for el in cat_wanted_only:
+        print(el)
+    papers_wantedonly=[]
+    for el in papers:
+        if el['categories'] in cat_wanted_only:
+            papers_wantedonly.append(el)
+    return papers_wantedonly
+
+def papers_by_mixed_categories(category:str,papers:list)->list:
+    categories=set([el['categories'] for el in papers])
+    cat_wanted_only=[el for el in categories if re.search(category,el,re.IGNORECASE)]
+    for el in cat_wanted_only:
+        print(el)
+    papers_wantedonly=[]
+    for el in papers:
+        if el['categories'] in cat_wanted_only:
+            papers_wantedonly.append(el)
+    return papers_wantedonly
 
 def main()->None:
     file=r'arxiv-metadata-oai-snapshot.json'
@@ -18,21 +40,14 @@ def main()->None:
                 line_dict=tmp
         data.append(line_dict)
         count+=1
-
-    for el in data[0]:
-        print(el,data[0][el])
-    exit()
-    categories=set([el['categories'] for el in data])
-    print(len(categories))
-    cat_physonly=[el for el in categories if re.search('ph',el,re.IGNORECASE) and not re.search(' ',el)]
-    for el in cat_physonly:
-        print(el)
-    papers_physonly=[]
-    for el in data:
-        if el['categories'] in cat_physonly:
-            papers_physonly.append(el)
+    papers_physonly = papers_by_single_category('ph',data)
     print(len(papers_physonly))
-    for x in papers_physonly[0]: print(x,papers_physonly[0][x])
+    papers_mathonly =papers_by_single_category('math',data)
+    print(len(papers_mathonly))
+    papers_csonly =papers_by_single_category('^cs',data)
+    print(len(papers_csonly))
+    categories = set([el['categories'] for el in data])
+    #for el in categories: print(el)
 
 if __name__=='__main__':
     main()
