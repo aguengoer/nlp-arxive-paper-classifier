@@ -1,5 +1,7 @@
 import json
 import re
+import pandas as pd
+
 
 def papers_by_single_category(category:str,papers:list)->list:
     #TODO: Refine for multiple elements of a single category
@@ -25,12 +27,13 @@ def papers_by_mixed_categories(category:str,papers:list)->list:
     return papers_wantedonly
 
 def main()->None:
+    pd.set_option('display.max_columns',None)
     file=r'arxiv-metadata-oai-snapshot.json'
     data=[]
     count=0
     wanted_keys=['categories','title','abstract','id']
     for line in open(file):
-        if count >10000:
+        if count >10000000000:
             break
         line_dict = json.loads(line)
         for key in line_dict:
@@ -48,6 +51,9 @@ def main()->None:
     print(len(papers_csonly))
     categories = set([el['categories'] for el in data])
     #for el in categories: print(el)
+    papers=pd.DataFrame(data)
+    print(papers)
+    papers.to_csv('papers.csv',sep=';')
 
 if __name__=='__main__':
     main()
