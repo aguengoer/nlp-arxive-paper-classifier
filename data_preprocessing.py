@@ -6,11 +6,22 @@ def main()->None:
     file=r'arxiv-metadata-oai-snapshot.json'
     data=[]
     count=0
+    wanted_keys=['categories','title','abstract','id']
     for line in open(file):
         if count >10000:
             break
-        data.append(json.loads(line))
+        line_dict = json.loads(line)
+        for key in line_dict:
+            if key not in wanted_keys:
+                tmp=dict(line_dict)
+                del tmp[key]
+                line_dict=tmp
+        data.append(line_dict)
         count+=1
+
+    for el in data[0]:
+        print(el,data[0][el])
+    exit()
     categories=set([el['categories'] for el in data])
     print(len(categories))
     cat_physonly=[el for el in categories if re.search('ph',el,re.IGNORECASE) and not re.search(' ',el)]
