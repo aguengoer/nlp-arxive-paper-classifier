@@ -32,8 +32,9 @@ def main()->None:
     data=[]
     count=0
     wanted_keys=['categories','title','abstract','id']
+    pandas_data=[]
     for line in open(file):
-        if count >10000000000:
+        if count >1000:
             break
         line_dict = json.loads(line)
         for key in line_dict:
