@@ -1,5 +1,6 @@
 /arxiv-metadata-oai-snapshot.json
 /papers.csv
 *.7z
+*.zip
 /.idea/
 .idea
