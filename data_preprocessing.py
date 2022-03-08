@@ -1,6 +1,13 @@
 import json
 import re
 import pandas as pd
+from gensim.test.utils import common_texts
+from gensim.models import Word2Vec
+from nltk.tokenize import sent_tokenize, word_tokenize
+import nltk
+import warnings
+warnings.filterwarnings(action = 'ignore')
+#nltk.download('popular')
 
 
 def papers_by_single_category(category: str, papers: list) -> list:
@@ -67,6 +74,31 @@ def main() -> None:
     papers = pd.DataFrame(data)
     print(papers)
     papers.to_csv('papers.csv', sep=';')
+    abstracts = list(papers.loc[:,'abstract'])
+    #print(abstracts)
+
+
+    tokenized_abstracts=[]
+    for abstract in abstracts:
+        abs = str(abstract.replace("\n"," "))
+        for i in sent_tokenize(abs):
+            temp = []
+
+            # tokenize the sentence into words
+            for j in word_tokenize(i):
+                temp.append(j.lower())
+
+            tokenized_abstracts.append(temp)
+
+    model = Word2Vec(tokenized_abstracts, min_count=1, window=5)
+
+    model.save("word2vec.model")
+
+    vectors = model.wv
+    print(vectors)
+    print(model.wv.similarity('study','paper'))
+    print(model.wv.similarity('study', 'fail'))
+    print(model.wv.similarity('paper', 'fail'))
 
 
 if __name__ == '__main__':
