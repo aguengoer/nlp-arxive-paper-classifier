@@ -1,7 +1,8 @@
 import json
+import pickle
+import random
 import re
 import warnings
-import random
 
 import gensim.models
 import matplotlib.pyplot as plt
@@ -58,7 +59,7 @@ def papers_by_mixed_categories(category: str, papers: list) -> list:
     return papers_wantedonly
 
 
-def tsne_plot(w2v_model,show_words=False):
+def tsne_plot(w2v_model, show_words=False):
     plottable_data = [(i, np.array(w2v_model.wv[i])) for i in w2v_model.wv.index_to_key]
     # plottable_data.columns = ['word','word-vector']
 
@@ -81,7 +82,8 @@ def tsne_plot(w2v_model,show_words=False):
                     size='medium', color='black', weight='semibold')
     plt.show()
 
-def pca_plot(w2v_model,show_words=False):
+
+def pca_plot(w2v_model, show_words=False):
     plottable_data = [(i, np.array(w2v_model.wv[i])) for i in w2v_model.wv.index_to_key]
     pca = PCA(n_components=2)
     pca_result = pca.fit_transform([x[1] for x in plottable_data])
@@ -117,7 +119,7 @@ def pca_plot(w2v_model,show_words=False):
     plt.show()
 
 
-def class_balancer(dataframes:list,size:int)->pd.DataFrame:
+def class_balancer(dataframes: list, size: int) -> pd.DataFrame:
     """
     Balances classes by random selection with replacement
     :param dataframes: list of pd.Dataframes each one representing 1 class
@@ -127,14 +129,12 @@ def class_balancer(dataframes:list,size:int)->pd.DataFrame:
     classes = len(dataframes)
     output_data = pd.DataFrame()
     for i in range(size):
-        cat = random.randint(0, classes-1)
-        el = random.randint(0,len(dataframes[cat].index)-1)
-        test = dataframes[cat].iloc[el,:]
-        output_data = pd.concat([output_data,pd.DataFrame(dataframes[cat].iloc[el, :]).T])
-    output_data.reset_index(drop=True,inplace=True)
+        cat = random.randint(0, classes - 1)
+        el = random.randint(0, len(dataframes[cat].index) - 1)
+        test = dataframes[cat].iloc[el, :]
+        output_data = pd.concat([output_data, pd.DataFrame(dataframes[cat].iloc[el, :]).T])
+    output_data.reset_index(drop=True, inplace=True)
     return output_data
-
-
 
 
 def main() -> None:
@@ -143,6 +143,21 @@ def main() -> None:
     data = []
     count = 0
     wanted_keys = ['categories', 'title', 'abstract', 'id']
+    write_file = 'daten_bsp.json'
+    write_lines = []
+    print('read 10 lines')
+    for line in open(file):
+        if count > 10:
+            break
+        write_lines.append(line)
+        count += 1
+
+    print('write 10 lines')
+    with open(write_file, 'w') as outfile:
+        for line in write_lines:
+            outfile.write(line)
+
+    print('read 10000 lines')
     for line in open(file):
         if count > 10000:
             break
@@ -154,6 +169,7 @@ def main() -> None:
                 line_dict = tmp
         data.append(line_dict)
         count += 1
+    print('sort papers')
     papers_physonly = papers_by_single_category('ph', data)
     # print(len(papers_physonly))
     papers_mathonly = papers_by_single_category('math', data)
@@ -161,19 +177,18 @@ def main() -> None:
     papers_csonly = papers_by_single_category('^cs', data)
     # print(len(papers_csonly))
     papers_econonly = papers_by_single_category('econ', data)
-    #print(len(papers_econonly))
+    # print(len(papers_econonly))
     # 0 econ only papers
-    papers_nlinonly = papers_by_single_category('nlin',data)
-    #print(len(papers_nlinonly))
-    papers_qbioonly = papers_by_single_category('q-bio',data)
-    #print(len(papers_qbioonly))
+    papers_nlinonly = papers_by_single_category('nlin', data)
+    # print(len(papers_nlinonly))
+    papers_qbioonly = papers_by_single_category('q-bio', data)
+    # print(len(papers_qbioonly))
 
     categories = set([el['categories'] for el in data])
     categories = sorted(categories)
-    for el in categories:
-        #print(el)
-        pass
-
+    # for el in categories:
+    #     #print(el)
+    #     pass
 
     data_physonly = pd.DataFrame([x['abstract'] for x in papers_physonly])
     data_physonly['class'] = (['physics' for x in range(len(data_physonly))])
@@ -190,13 +205,15 @@ def main() -> None:
     data = data.append(data_csonly)
     data = data.append(data_csonly)
     data = data.append(data_csonly)
-    data.reset_index(drop=True,inplace=True)
+    data.reset_index(drop=True, inplace=True)
 
+    print('balancing data')
     # Data balanced for equal class representation
-    equal_data = class_balancer([data_physonly,data_mathonly,data_csonly,data_nlinonly,data_qbioonly],10000)
-    equal_data.columns= ['abstract','class']
-    data=equal_data
+    equal_data = class_balancer([data_physonly, data_mathonly, data_csonly, data_nlinonly, data_qbioonly], 10000)
+    equal_data.columns = ['abstract', 'class']
+    data = equal_data
     tokenized_abstracts = []
+    print('tokenizing data')
     for index, abstract in enumerate(data.iloc[:, 0]):
         abs = str(abstract.replace("\n", " "))
         abs = re.sub("[\.,;\":\(\)-]", "", abs)
@@ -213,9 +230,10 @@ def main() -> None:
     data['clean'] = tokenized_abstracts
     data.columns = ['text', 'class', 'clean']
 
-    data['class'] = data['class'].map({'physics': 0, 'math': 1,'cs':2,'nlin':3,'qbio':4})
-    #print(data.describe())
-    for i in range(10):
+    data['class'] = data['class'].map({'physics': 0, 'math': 1, 'cs': 2, 'nlin': 3, 'qbio': 4})
+    # print(data.describe())
+    print('start clustering and training')
+    for i in range(1):
         X_train, X_test, Y_train, Y_test = train_test_split(data['clean'], data['class'], test_size=0.2)
 
         w2v_model = gensim.models.Word2Vec(X_train,
@@ -224,8 +242,8 @@ def main() -> None:
                                            min_count=2)
         show_words = False
 
-        #tsne_plot(w2v_model,show_words)
-        #pca_plot(w2v_model,show_words)
+        tsne_plot(w2v_model, show_words)
+        pca_plot(w2v_model, show_words)
 
         # print(w2v_model.wv.most_similar('paper'))
 
@@ -254,35 +272,42 @@ def main() -> None:
 
         y_pred = rf_model.predict(X_test_vect_avg)
 
-        precision = precision_score(Y_test, y_pred,average='macro')
-        recall = recall_score(Y_test, y_pred,average='macro')
+        precision = precision_score(Y_test, y_pred, average='macro')
+        recall = recall_score(Y_test, y_pred, average='macro')
         print(f'Random forest: Precision: {round(precision, 3)} /'
               f' Recall: {round(recall, 3)} /'
               f' Accuracy: {round((y_pred == Y_test).sum() / len(y_pred), 3)}')
 
-        kn=KNeighborsClassifier()
+        kn = KNeighborsClassifier()
         kn_model = kn.fit(X_train_vect_avg, Y_train.values.ravel())
 
         y_pred = kn_model.predict(X_test_vect_avg)
 
-        precision = precision_score(Y_test, y_pred,average='macro')
-        recall = recall_score(Y_test, y_pred,average='macro')
+        precision = precision_score(Y_test, y_pred, average='macro')
+        recall = recall_score(Y_test, y_pred, average='macro')
         print(f'KNN: Precision: {round(precision, 3)} /'
               f' Recall: {round(recall, 3)} /'
               f' Accuracy: {round((y_pred == Y_test).sum() / len(y_pred), 3)}')
 
-
-        nn=MLPClassifier(verbose=False)
+        nn = MLPClassifier(verbose=False)
         nn_model = nn.fit(X_train_vect_avg, Y_train.values.ravel())
 
         y_pred = nn_model.predict(X_test_vect_avg)
 
-        precision = precision_score(Y_test, y_pred,average='macro')
-        recall = recall_score(Y_test, y_pred,average='macro')
+        precision = precision_score(Y_test, y_pred, average='macro')
+        recall = recall_score(Y_test, y_pred, average='macro')
         print(f'Neural Net: Precision: {round(precision, 3)} /'
               f' Recall: {round(recall, 3)} /'
               f' Accuracy: {round((y_pred == Y_test).sum() / len(y_pred), 3)}')
         print('\n')
+
+    rf_file = 'rf_model.sav'
+    knn_file = 'knn_model.sav'
+    nn_file = 'nn_model.sav'
+    pickle.dump(rf_model, open(rf_file, 'wb'))
+    pickle.dump(kn_model, open(knn_file, 'wb'))
+    pickle.dump(nn_model, open(nn_file, 'wb'))
+
 
 if __name__ == '__main__':
     main()
